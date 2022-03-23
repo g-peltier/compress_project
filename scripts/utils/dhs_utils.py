@@ -75,7 +75,7 @@ def get_couples(df):
           - 'positie': the 'rank' of the person in the house
     output:
         a list of tuple:
-            (idx_1 (int), idx_2 (int), married (bool)) 
+            (idx_1 (int), idx_2 (int), married (bool), year (int)) 
         of every couple that respond to the form and live in the same house.
     """
     
@@ -100,22 +100,26 @@ def get_couples(df):
             if den_house.isin(part2_den_spouse).sum() > 0:
                 part1 = den_house[den_house.isin(part1_den)]
                 part2 = den_house[den_house.isin(part2_den_spouse)]
-                list_couple.append((part1.index.values[0], part2.index.values[0], 1))
-            elif den_house.isin(part2_den_spouse).sum() > 0:
+                list_couple.append((part1.index.values[0], part2.index.values[0], 
+                                    1, df['year'].unique()[0]))
+            elif den_house.isin(part2_den_perm).sum() > 0:
                 part1 = den_house[den_house.isin(part1_den)]
                 part2 = den_house[den_house.isin(part2_den_perm)]
-                list_couple.append((part1.index.values[0], part2.index.values[0], 0))
+                list_couple.append((part1.index.values[0], part2.index.values[0],
+                                    0, df['year'].unique()[0]))
             else:
                 continue
 
-    return pd.DataFrame(list_couple, columns=["part1", "part2", "married"])
+    return pd.DataFrame(list_couple, columns=["part1", "part2", "married", "year"])
 
 
-def get_all_data(path, year_list=range(1993, 2021)):
+def get_all_data(path, column_interests, year_list=range(1993, 2003)):
     """Return a dataframe containing all info from year in year_list
     
     inputs: 
         path (str): the location of the data (.sav files)
+        column_interests (list(str)): the name of the columns that we want
+        each individual to have anwser to.
         year_list (list(int)): the years to fetch the data
     output:
         dataframe that contains all the information on individuals
@@ -126,9 +130,6 @@ def get_all_data(path, year_list=range(1993, 2021)):
     for year in tqdm(year_list):
         list_data = []
 
-        # error for 2017 files:
-        if year == 2017:
-            continue
         # the hhi information was in inc for the year 1993
         if year > 1993:
             list_data.append(pd.read_spss(os.path.join(path, f'hhi{year}en.sav'))) 
@@ -137,16 +138,18 @@ def get_all_data(path, year_list=range(1993, 2021)):
         list_data.append(pd.read_spss(os.path.join(path, f'inc{year}en.sav')))
 
         df = get_df(list_data, year)
-        couple = get_couples(df)
 
         # small change if year 1994:
         if year == 1994:
             psy_columns = df.columns[df.columns.str.startswith('teg')]
             dict_psy = {old: new for (old, new) in zip(psy_columns, psy_columns.str[:-1])}
             df = df.rename(dict_psy, axis=1)
-        # variable scholing changed name after 2009
+        # variable scholing changed name after 2001
         if year > 2001:
             df = df.rename({'oplzon': 'scholing'}, axis=1)
+            
+        df = df[column_interests].dropna()
+        couple = get_couples(df)
         
         list_df.append(df)
         list_couple.append(couple)
