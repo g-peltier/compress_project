@@ -1209,7 +1209,7 @@ test = ["websockets"]
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.9"
-content-hash = "f053b106455445878175dfb5d4ee6eb4727655fc5cb92a988816f13f70510ab5"
+content-hash = "bc96556fbb156408ccc4268fbf86aa17704b5e16b177740b63e6548945e9bea3"
 
 [metadata.files]
 absl-py = [
