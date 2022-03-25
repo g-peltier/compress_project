@@ -69,7 +69,7 @@ def get_distr(a, b, Phi, sigma=0.1):
     
     return ((np.diag(a).dot(np.exp(Phi/sigma))).dot(np.diag(b)))
 
-def proximal_descent(A, X, mu1, Y, mu2, t=0.1, l=0.1, sigma=0.1, n_steps=100, verbose=True, svd_flag=False):
+def proximal_descent(A, X, mu1, Y, mu2, t=0.1, l=0.1, sigma=0.1, n_steps=100, verbose=True, svd_flag=False, pi_hat=None):
     """
     Gradient descent, to estimate the matrix A, given optimal matching
         
@@ -105,22 +105,29 @@ def proximal_descent(A, X, mu1, Y, mu2, t=0.1, l=0.1, sigma=0.1, n_steps=100, ve
     svd_flag : bool, optional
         Wether to use nuclear norm regulerization (default is False)
         
+    pi_hat : np.array, None, optional
+        Defines the default distribution of optimal matching, if None then diagonal matrix with uniform distribution on the diagonal is used (default is False)
     """
     
-    X_size = X.shape[0]
-    Y_size = Y.shape[0]
+    X_size, X_features_size = X.shape
+    Y_size, Y_features_size = Y.shape
     size = min(X_size, Y_size)
     
     history_coeffs = []
     history_grad = []
+    
+    if pi_hat is not None:
+        pi = pi_hat
+    else:
+        pi = np.zeros((X_size, Y_size))
+        np.fill_diagonal(pi, 1/size)
 
     for i in range(n_steps):
         Phi = get_cost(X, Y, A)
         a, b = Sinkhorn(mu1, mu2, Phi, sigma)
         pi_A = get_distr(a, b, Phi, sigma)
-        pi_hat = np.zeros_like(pi_A)
-        np.fill_diagonal(pi_hat, 1/size)
-        coeffs = pi_A - pi_hat
+
+        coeffs = pi_A - pi
         
         grad = X.T@coeffs@Y
         A -= t*(grad)
